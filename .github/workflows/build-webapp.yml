@@ -1,0 +1,53 @@
+name: build Sentinel admin UI
+
+on:
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      buildArgs:
+        description: 'buildArgs ie: -e'
+        required: false
+        default: '-e'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+       java: [11]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+          architecture: x64
+
+#      - name: Test with Maven
+#        run: mvn test
+
+      - name: Restore Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: restore
+
+      - name: Build with Maven
+        run: |
+          mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -DminimumPriority=1 ${{ github.event.inputs.buildArgs }}
+          cd sentinel-dashboard/src/main/webapp/resources
+          npm i
+          npm start
+          npm run build
+ 
+      - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: save
+ 
+ #     - name: Run Codecov
+ #       run: bash <(curl -s https://codecov.io/bash)
